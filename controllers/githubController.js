@@ -3,7 +3,7 @@ const Review = require("../models/Review");
 const { analyzePR } = require("../services/geminiService");
 const crypto = require("crypto");
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Personal Access Token with repo read access
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 
 

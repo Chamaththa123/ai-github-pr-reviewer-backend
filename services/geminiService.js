@@ -18,11 +18,9 @@ const analyzePR = async (commitMessages, files) => {
     const prompt = `
 You are a senior software engineer performing an automated pull request review.
 
-Commit Messages:
-${commitMessages}
+Commit Messages: ${commitMessages}
 
-Files Changed:
-${fileSummaries}
+Files Changed: ${fileSummaries}
 
 Analyze and return JSON with:
 1. Code readability
@@ -56,11 +54,46 @@ Return JSON only:
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-    console.log(text);
-    return text;
+    
+    console.log("Raw AI Response:", text);
+    
+    // Parse the JSON response
+    try {
+      const analysisResult = JSON.parse(text);
+      return analysisResult;
+    } catch (parseError) {
+      console.error("JSON Parse Error:", parseError);
+      console.log("Raw text that failed to parse:", text);
+      
+      // Try to extract JSON from the response if it's wrapped in markdown
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        try {
+          const analysisResult = JSON.parse(jsonMatch[1]);
+          return analysisResult;
+        } catch (secondParseError) {
+          console.error("Second JSON Parse Error:", secondParseError);
+          return {
+            issues: [],
+            summary: { total: 0, bySeverity: {} },
+            error: "Failed to parse AI response"
+          };
+        }
+      }
+      
+      return {
+        issues: [],
+        summary: { total: 0, bySeverity: {} },
+        error: "Failed to parse AI response"
+      };
+    }
   } catch (err) {
     console.error("Gemini API Error:", err);
-    return "Error analyzing PR.";
+    return {
+      issues: [],
+      summary: { total: 0, bySeverity: {} },
+      error: "Error analyzing PR"
+    };
   }
 };
 

@@ -19,5 +19,11 @@
     "express": "^5.1.0",
     "mongoose": "^8.17.2",
     "nodemon": "^3.1.10"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/parser": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
+    "esquery": "^1.6.0"
   }
 }

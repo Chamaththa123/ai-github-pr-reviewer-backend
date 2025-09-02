@@ -305,12 +305,6 @@ const ReviewSchema = new mongoose.Schema(
     // Enhanced Metadata
     analysisMetadata: AnalysisMetadataSchema,
 
-    // AI Recommendations
-    // recommendations: [{
-    //   type: String,
-    //   maxlength: 500
-    // }],
-
     // Performance Metrics
     performanceMetrics: {
       totalAnalysisTime: { type: Number, default: 0 }, // ms

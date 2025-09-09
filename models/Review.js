@@ -262,6 +262,11 @@ const ReviewSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    repoId: {
+      type: Number, // stable GitHub repo ID
+      required: true,
+      index: true,
+    },
     pullRequestId: {
       type: Number,
       required: true,

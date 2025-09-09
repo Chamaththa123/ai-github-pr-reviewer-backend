@@ -30,6 +30,7 @@ const handlePRWebhook = async (req, res) => {
     }
 
     const repo = repository.full_name;
+    const repoId = repository.id;
     const pullRequestId = pull_request.number;
     const prTitle = pull_request.title;
     const prUrl = pull_request.html_url;
@@ -109,6 +110,7 @@ const handlePRWebhook = async (req, res) => {
     // Save to DB with enhanced schema structure
     const review = new Review({
       repo,
+      repoId,
       pullRequestId,
       commitMessage: commitMessages,
       reviewComments: "Enhanced Automated Review with AST Analysis",

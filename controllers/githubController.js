@@ -142,7 +142,7 @@ const handlePRWebhook = async (req, res) => {
     console.log(`Enhanced review saved for PR #${pullRequestId} in ${repo}`);
     console.log(`Found ${analysisResult.issues?.length || 0} issues`);
     console.log(`Security Score: ${analysisResult.securityScore || 0}/100`);
-
+console.log('id',savedReview._id)
     res.status(200).json({
       message: "Enhanced review created",
       reviewId: savedReview._id,

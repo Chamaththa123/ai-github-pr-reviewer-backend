@@ -1,4 +1,3 @@
-// src/services/githubService.js
 const axios = require("axios");
 
 const getPRDetails = async (pull_request) => {
@@ -6,9 +5,9 @@ const getPRDetails = async (pull_request) => {
   const diff = diffRes.data;
 
   const commitsRes = await axios.get(pull_request.commits_url, {
-    headers: { "Accept": "application/vnd.github+json" }
+    headers: { Accept: "application/vnd.github+json" },
   });
-  const commits = commitsRes.data.map(c => c.commit.message);
+  const commits = commitsRes.data.map((c) => c.commit.message);
 
   return { diff, commits };
 };
@@ -18,17 +17,17 @@ const getFileContent = async (repo, path, ref, token) => {
     const response = await axios.get(
       `https://api.github.com/repos/${repo}/contents/${path}?ref=${ref}`,
       {
-        headers: { 
+        headers: {
           Authorization: `token ${token}`,
-          Accept: "application/vnd.github+json"
-        }
+          Accept: "application/vnd.github+json",
+        },
       }
     );
-    
+
     if (response.data.content) {
-      return Buffer.from(response.data.content, 'base64').toString('utf8');
+      return Buffer.from(response.data.content, "base64").toString("utf8");
     }
-    
+
     return null;
   } catch (error) {
     console.warn(`Failed to fetch content for ${path}:`, error.message);
@@ -42,20 +41,23 @@ const getPRFilesWithContent = async (repo, pullNumber, token) => {
     const response = await axios.get(
       `https://api.github.com/repos/${repo}/pulls/${pullNumber}/files`,
       {
-        headers: { 
+        headers: {
           Authorization: `token ${token}`,
-          Accept: "application/vnd.github+json"
-        }
+          Accept: "application/vnd.github+json",
+        },
       }
     );
 
     const filesWithContent = await Promise.all(
       response.data.map(async (file) => {
         let content = null;
-        
+
         // Only fetch content for code files that weren't removed
-        if (file.status !== 'removed' && isCodeFile(file.filename)) {
-          content = await getFileContentFromContentsUrl(file.contents_url, token);
+        if (file.status !== "removed" && isCodeFile(file.filename)) {
+          content = await getFileContentFromContentsUrl(
+            file.contents_url,
+            token
+          );
         }
 
         return {
@@ -67,7 +69,7 @@ const getPRFilesWithContent = async (repo, pullNumber, token) => {
           patch: file.patch,
           content: content,
           raw_url: file.raw_url,
-          contents_url: file.contents_url
+          contents_url: file.contents_url,
         };
       })
     );
@@ -83,16 +85,16 @@ const getPRFilesWithContent = async (repo, pullNumber, token) => {
 const getFileContentFromContentsUrl = async (contentsUrl, token) => {
   try {
     const response = await axios.get(contentsUrl, {
-      headers: { 
+      headers: {
         Authorization: `token ${token}`,
-        Accept: "application/vnd.github+json"
-      }
+        Accept: "application/vnd.github+json",
+      },
     });
-    
+
     if (response.data.content) {
-      return Buffer.from(response.data.content, 'base64').toString('utf8');
+      return Buffer.from(response.data.content, "base64").toString("utf8");
     }
-    
+
     return null;
   } catch (error) {
     console.warn(`Failed to fetch file content:`, error.message);
@@ -101,6 +103,6 @@ const getFileContentFromContentsUrl = async (contentsUrl, token) => {
 };
 
 // Helper function to determine if file is a code file
-const isCodeFile = (filename)
+const isCodeFile = filename;
 
-module.exports = { getPRDetails,getFileContent ,getPRFilesWithContent};
+module.exports = { getPRDetails, getFileContent, getPRFilesWithContent };

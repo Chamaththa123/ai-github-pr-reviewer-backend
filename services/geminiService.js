@@ -1,4 +1,3 @@
-// services/astAnalysisService.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { analyzeSecurityVulnerabilities } = require("./astSecurityAnalyzer");
 
@@ -512,7 +511,7 @@ function astFindingsToIssues(astFindings) {
         file: finding.file,
         location: vuln.location,
         severity: vuln.severity,
-        cwe: vuln.cwe,
+        cwe: vuln.cwe && /^CWE-\d+$/.test(vuln.cwe) ? vuln.cwe : null,
         confidence: "high",
         exploitability: vuln.exploitability || "medium",
         source: "ast",

@@ -2,12 +2,13 @@ const axios = require("axios");
 const Review = require("../models/Review");
 const { analyzePRWithAST } = require("../services/geminiService");
 const crypto = require("crypto");
+const { calculateOverallScore } = require("../utils/scoreCalculator");
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET || "";
 
 function verifySignature(req) {
-  if (!WEBHOOK_SECRET) return true; // skip if no secret
+  if (!WEBHOOK_SECRET) return true;
 
   const sig = req.headers["x-hub-signature-256"];
   const hmac = crypto.createHmac("sha256", WEBHOOK_SECRET);
@@ -34,6 +35,10 @@ const handlePRWebhook = async (req, res) => {
     const pullRequestId = pull_request.number;
     const prTitle = pull_request.title;
     const prUrl = pull_request.html_url;
+
+    // Contributor info
+    const contributorId = pull_request.user.id;
+    const contributorUsername = pull_request.user.login;
 
     // Fetch commits for this PR
     const commitsRes = await axios.get(
@@ -107,11 +112,28 @@ const handlePRWebhook = async (req, res) => {
       ),
     ];
 
+    // Get the next review turn number for this PR
+    const lastReview = await Review.findOne({ repoId, pullRequestId }).sort({
+      reviewTurn: -1,
+    });
+
+    console.log("lastReview", lastReview);
+
+    const reviewTurn = lastReview ? lastReview.reviewTurn + 1 : 1;
+
+    // Calculate overall score
+    const overallScore = calculateOverallScore({
+      issues: analysisResult.issues || [],
+      security: { vulnerabilities: analysisResult.astFindings || [] },
+      metrics: analysisResult.performanceMetrics || {},
+    });
+
     // Save to DB with enhanced schema structure
     const review = new Review({
-      repo,
+      // repo,
       repoId,
       pullRequestId,
+      reviewTurn,
       commitMessage: commitMessages,
       reviewComments: "Enhanced Automated Review with AST Analysis",
       issues: analysisResult.issues || [],
@@ -122,6 +144,9 @@ const handlePRWebhook = async (req, res) => {
       },
       astFindings: analysisResult.astFindings || [],
       securityScore: analysisResult.securityScore || 0,
+      overallScore: overallScore,
+      contributorId: contributorId,
+      contributorUsername: contributorUsername,
       status: analysisResult.error ? "failed" : "completed",
       analysisMetadata: {
         filesAnalyzed: files.length,
@@ -136,16 +161,18 @@ const handlePRWebhook = async (req, res) => {
         memoryUsage: 0,
       },
     });
-
     const savedReview = await review.save();
-
-    console.log(`Enhanced review saved for PR #${pullRequestId} in ${repo}`);
+    console.log(
+      `Enhanced review saved for PR #${pullRequestId} in ${repo} (Turn ${reviewTurn})`
+    );
     console.log(`Found ${analysisResult.issues?.length || 0} issues`);
     console.log(`Security Score: ${analysisResult.securityScore || 0}/100`);
-console.log('id',savedReview._id)
+    console.log("Review ID:", savedReview._id);
+
     res.status(200).json({
       message: "Enhanced review created",
       reviewId: savedReview._id,
+      reviewTurn: reviewTurn,
       issuesFound: analysisResult.issues?.length || 0,
       summary: analysisResult.summary,
       securityScore: analysisResult.securityScore,
@@ -154,11 +181,23 @@ console.log('id',savedReview._id)
   } catch (err) {
     console.error("Webhook processing error:", err);
 
-    // Try to save error state to DB
+    // Try to save error state to DB with proper review turn handling
     try {
+      const repo = req.body.repository?.full_name || "unknown";
+      const pullRequestId = req.body.pull_request?.number || 0;
+
+      // Get the next review turn number for error case as well
+      const lastReview = await Review.findOne({ repo, pullRequestId }).sort({
+        reviewTurn: -1,
+      });
+
+      const reviewTurn = lastReview ? lastReview.reviewTurn + 1 : 1;
+
       const errorReview = new Review({
-        repo: req.body.repository?.full_name || "unknown",
-        pullRequestId: req.body.pull_request?.number || 0,
+        repo: repo,
+        repoId: req.body.repository?.id || 0,
+        pullRequestId: pullRequestId,
+        reviewTurn: reviewTurn,
         commitMessage: "Error occurred during processing",
         reviewComments: `Error: ${err.message}`,
         issues: [],
@@ -166,9 +205,17 @@ console.log('id',savedReview._id)
         astFindings: [],
         securityScore: 0,
         status: "error",
+        errorDetails: {
+          message: err.message,
+          stack: err.stack,
+          timestamp: new Date(),
+        },
       });
 
       await errorReview.save();
+      console.log(
+        `Error review saved for PR #${pullRequestId} in ${repo} (Turn ${reviewTurn})`
+      );
     } catch (saveError) {
       console.error("Failed to save error state:", saveError);
     }

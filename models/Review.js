@@ -1,4 +1,3 @@
-// models/Review.js
 const mongoose = require("mongoose");
 
 // Enhanced Issue Schema with additional security fields
@@ -42,7 +41,7 @@ const IssueSchema = new mongoose.Schema(
     cwe: {
       type: String,
       default: null,
-      match: /^CWE-\d+$/,
+      // match: /^CWE-\d+$/,
     },
     confidence: {
       type: String,
@@ -87,7 +86,7 @@ const VulnerabilitySchema = new mongoose.Schema(
     },
     cwe: {
       type: String,
-      match: /^CWE-\d+$/,
+      // match: /^CWE-\d+$/,
     },
     exploitability: {
       type: String,
@@ -257,21 +256,19 @@ const AnalysisMetadataSchema = new mongoose.Schema(
 const ReviewSchema = new mongoose.Schema(
   {
     // Basic PR Information
-    repo: {
-      type: String,
-      required: true,
-      index: true,
-    },
+    // repo: {
+    //   type: String,
+    //   required: true,
+    // },
     repoId: {
-      type: Number, // stable GitHub repo ID
+      type: Number,
       required: true,
-      index: true,
     },
     pullRequestId: {
       type: Number,
       required: true,
-      index: true,
     },
+    reviewTurn: { type: Number, required: true, default: 1 },
     commitMessage: {
       type: String,
       required: true,
@@ -304,7 +301,7 @@ const ReviewSchema = new mongoose.Schema(
       type: String,
       enum: ["pending", "completed", "failed", "error"],
       default: "pending",
-      index: true,
+      // index: true,
     },
 
     // Enhanced Metadata
@@ -325,6 +322,20 @@ const ReviewSchema = new mongoose.Schema(
       code: String,
       timestamp: Date,
     },
+
+    overallScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+    contributorId: {
+      type: String,
+      required: true,
+    },
+    contributorUsername: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: true,
@@ -333,11 +344,11 @@ const ReviewSchema = new mongoose.Schema(
 );
 
 // Compound indexes for better query performance
-ReviewSchema.index({ repo: 1, pullRequestId: 1 }, { unique: true });
-ReviewSchema.index({ status: 1, createdAt: -1 });
-ReviewSchema.index({ "summary.bySeverity.critical": -1 });
-ReviewSchema.index({ securityScore: -1 });
-ReviewSchema.index({ "analysisMetadata.astAnalysisPerformed": 1 });
+// ReviewSchema.index({ repo: 1, pullRequestId: 1 }, { unique: true });
+// ReviewSchema.index({ status: 1, createdAt: -1 });
+// ReviewSchema.index({ "summary.bySeverity.critical": -1 });
+// ReviewSchema.index({ securityScore: -1 });
+// ReviewSchema.index({ "analysisMetadata.astAnalysisPerformed": 1 });
 
 // Virtual for total vulnerabilities from AST
 ReviewSchema.virtual("totalASTVulnerabilities").get(function () {

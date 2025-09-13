@@ -95,7 +95,7 @@ const VulnerabilitySchema = new mongoose.Schema(
     },
     pattern: {
       type: String,
-      required: true,
+      // required: true,
     },
     confidence: {
       type: String,

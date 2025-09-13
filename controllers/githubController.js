@@ -83,9 +83,18 @@ const handlePRWebhook = async (req, res) => {
           }
         }
 
+        let additionsOnly = "";
+    if (f.patch) {
+      additionsOnly = f.patch
+        .split("\n")
+        .filter((line) => line.startsWith("+") && !line.startsWith("+++"))
+        .map((line) => line.slice(1)) // remove `+`
+        .join("\n");
+    }
+
         return {
           filename: f.filename,
-          patch: f.patch || "",
+           patch: additionsOnly,
           content: content,
           status: f.status,
           additions: f.additions,
